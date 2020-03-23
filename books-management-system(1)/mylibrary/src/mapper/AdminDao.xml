@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mapper.AdminDao">
+	<!-- 管理员登录 -->
+	<select id="login" parameterType="Admin" resultType="Admin">
+		select admin_id as adminId,password,name  
+		FROM admin where admin_id=#{adminId}  and password=#{password} 
+	</select>
+	<!-- 读者登录 -->
+	<select id="readerLogin" parameterType="Admin" resultType="Admin">
+		select reader_id as adminId,password,name ,card_state as access 
+		FROM reader_info where reader_id=#{adminId}  and password=#{password} 
+	</select>
+	<!-- 读者修改密码-->
+	<update id="alterpwd" parameterType="Admin" >
+		update reader_info set password=#{password} where reader_id=#{adminId}
+	</update>
+	<!-- 管理员修改密码-->
+	<update id="alterpwdAdmin" parameterType="Admin" >
+		update admin set password=#{password} where admin_id=#{adminId}
+	</update>
+</mapper>

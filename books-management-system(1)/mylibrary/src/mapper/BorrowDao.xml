@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mapper.BorrowDao">
+ <!--	<resultMap type="LeadInfo" id="leadInfo">
+  &lt;!&ndash;一对一关联&ndash;&gt;
+ 		<result column="fine" property="fine"/>
+ 		<result column="lend_date" property="lend_date"/>
+ 		<result column="back_date" property="back_date"/>
+ 		<result column="state" property="state"/>
+   	 	&lt;!&ndash;property中是Bookinfo类中的Category变量名 category&ndash;&gt;
+ 		<association  javaType="Bookinfo" property="bookinfo">
+ 			<result column="book_id" property="book_id"/>
+ 			<result column="name" property="name"/>
+ 			<result column="author" property="author"/>
+ 			<result column="publish" property="publish"/>
+ 			<result column="ISBN" property="ISBN"/>
+ 			<result column="introduction" property="introduction"/>
+ 			<result column="language" property="language"/>
+ 			<result column="price" property="price"/>
+ 			<result column="pubdate" property="pubdate"/>
+ 			<result column="stock" property="stock"/>
+ 		</association>
+ 		<association  javaType="Admin" property="admin">
+ 			<result column="reader_id" property="adminId"/>
+ 			<result column="name" property="name"/>
+ 			<result column="password" property="password"/>
+ 		</association>
+ 	</resultMap>-->
+
+	<!-- 添加借阅记录 -->
+	<select id="addLead" parameterType="LeadInfo" >
+		INSERT into lend_list(
+		book_id,
+		reader_id,
+		lend_date,
+		back_date,
+		state,
+		fine
+		)
+		VALUES(
+		#{book_id},#{adminId},#{lend_date},#{back_date},#{state},#{fine}
+		)
+	</select>
+	<!-- 借阅记录条数-->
+	<select id="countDisBook" parameterType="PageBean" resultType="Integer">
+		select count(*)
+		from lend_list a
+		LEFT JOIN book_info b
+		on a.book_id=b.book_id
+		LEFT JOIN reader_info c
+		on a.reader_id=c.reader_id
+		<where>
+		<if test="adminId!=null and adminId!=''">
+			and c.reader_id =#{adminId}
+		</if>
+            <if test="rname!=null and rname!=''">
+                and c.name like '%${rname}%'
+            </if>
+            <if test="bname!=null and bname!=''">
+                and b.name like '%${bname}%'
+            </if>
+			<if test="state!=null and state!=''">
+				and a.state =#{state}
+			</if>
+        </where>
+
+	</select>
+	<!-- 借阅记录列表-->
+	<select id="listDisBackBook" parameterType="PageBean" resultType="LeadInfo">
+		select a.sernum,
+		a.book_id,
+		a.reader_id as adminId,
+		a.lend_date,
+		a.back_date,
+		a.state,
+		a.fine,
+		b.name as bookName,
+		c.name as adminName
+		from lend_list a
+		LEFT JOIN book_info b
+		on a.book_id=b.book_id
+		LEFT JOIN reader_info c
+		on a.reader_id=c.reader_id
+        <where>
+		<if test="adminId!=null and adminId!=''">
+			and c.reader_id =#{adminId}
+		</if>
+		<if test="state!=null and state!=''">
+			and a.state =#{state}
+		</if>
+		<if test="rname!=null and rname!=''">
+			and c.name like '%${rname}%'
+		</if>
+		<if test="bname!=null and bname!=''">
+			and b.name like '%${bname}%'
+		</if>
+        </where>
+		<if test="currentPage!=null and currentPage!=''">
+			limit #{index}, #{pageSize}
+		</if>
+
+	</select>
+    <!--
+
+
+    执行设置罚金的存储过程 -->
+    <update id="addFine" >
+       {call update_conference_status()}
+    </update>
+	<!--归还图书-->
+	<update id="backBook" parameterType="Map">
+			UPDATE lend_list set state=1 ,fine=0 where reader_id=#{params.reader_id} and book_id=#{params.book_id};
+			UPDATE book_info set stock=stock+1 where book_id=#{params.book_id};
+    </update>
+	<!-- 判断读者是否借过此书-->
+    <select id="isLended" parameterType="LeadInfo" resultType="Integer">
+		select  count(*) from lend_list where reader_id=#{adminId} and book_id=#{book_id} and state=2
+	</select>
+	<!-- 判断读者是否达到借书上限-->
+	<select id="cardState" parameterType="LeadInfo" resultType="Integer">
+		select  card_state from reader_info where reader_id=#{adminId}
+	</select>
+	<!-- 判断读者未还图书的数量-->
+	<select id="disBack" parameterType="LeadInfo" resultType="Integer">
+		select  count(*) from lend_list where reader_id=#{adminId} and state=2
+	</select>
+</mapper>
